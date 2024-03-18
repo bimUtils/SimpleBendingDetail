@@ -1,0 +1,6 @@
+D:\bimUtils\SimpleBendingDetail\SimpleBendingDetail\bin\Debug\SimpleBendingDetail.dll
+D:\bimUtils\SimpleBendingDetail\SimpleBendingDetail\bin\Debug\SimpleBendingDetail.pdb
+D:\bimUtils\SimpleBendingDetail\SimpleBendingDetail\obj\Debug\SimpleBendingDetail.csproj.AssemblyReference.cache
+D:\bimUtils\SimpleBendingDetail\SimpleBendingDetail\obj\Debug\SimpleBendingDetail.csproj.CoreCompileInputs.cache
+D:\bimUtils\SimpleBendingDetail\SimpleBendingDetail\obj\Debug\SimpleBendingDetail.dll
+D:\bimUtils\SimpleBendingDetail\SimpleBendingDetail\obj\Debug\SimpleBendingDetail.pdb

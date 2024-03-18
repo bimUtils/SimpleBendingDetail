@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Name>SimpleBendingDetail</Name>
+    <FullClassName>SimpleBendingDetail.SimpleBendingDetail</FullClassName>
+    <Text>SimpleBendingDetail</Text>
+    <Description>Create bending detail of rebar.</Description>
+    <VisibilityMode>NotVisibleWhenNoActiveDocument</VisibilityMode>
+    <Assembly>SimpleBendingDetail.dll</Assembly>
+    <AddInId>EC55081E-4CBE-49F0-84CB-3D423F28F49B</AddInId>
+    <VendorId>bimUtils</VendorId>
+    <VendorDescription>bimUtils.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>
