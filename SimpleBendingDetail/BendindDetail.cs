@@ -50,7 +50,25 @@ namespace SimpleBendingDetail
             XYZ viewY = view.UpDirection.Normalize();
 
             //Get first visible bar from rebar
-            for (int i = 0; i < rebar.NumberOfBarPositions; i++)
+
+            int startPos = 0;
+            int endPos = rebar.NumberOfBarPositions;
+
+
+            if (rebar.LayoutRule != RebarLayoutRule.Single)
+            {
+                if (!rebar.IncludeFirstBar)
+                {
+                    startPos++;
+                }
+
+                if (!rebar.IncludeLastBar)
+                {
+                    endPos--;
+                }
+            }
+
+            for (int i = startPos; i < endPos; i++)
             {
                 if (!rebar.IsBarHidden(view, i) && visibleBarPosition > i)
                 {
@@ -139,11 +157,10 @@ namespace SimpleBendingDetail
 
 
             //***********************
-            //Write length and visibility of each segment
+            //Write length and visibility to each segment
             //***********************
 
             SetBarLengths(rebar, doc, visibleBarPosition);
-
 
             //***********************
             //Rotate labels in right direction
@@ -267,8 +284,7 @@ namespace SimpleBendingDetail
             }
 
             //read from bottom and right
-            //todo implement almost equal 0.0
-            if (angleRebarPlanToView > 0.00000001 && angleRebarToXDirection > -0.0000001 && (angleRebarToXDirection <= Math.PI / 2 - 0.0001  || angleRebarToXDirection > Math.PI / 2 * 3 - 0.0000001))
+            if (MathComparisonUtils.IsGreaterThan ( angleRebarPlanToView, 0) && MathComparisonUtils.IsGreaterThanOrAlmostEqual( angleRebarToXDirection, 0) && MathComparisonUtils.IsLessThan (angleRebarToXDirection, Math.PI / 2 )  || MathComparisonUtils.IsGreaterThanOrAlmostEqual ( angleRebarToXDirection , Math.PI / 2 * 3 ))
             {
                 angleRebarPlanToView += Math.PI;
             }
@@ -281,9 +297,8 @@ namespace SimpleBendingDetail
             {
                 Curve c = null;
 
-                //todo implement almostNotEqual
 
-                if (angleRebarPlanToView > 0.00000000001)
+                if (MathComparisonUtils.IsGreaterThan (angleRebarPlanToView, 0) )
                 {
                     Transform rotated = Transform.CreateRotationAtPoint(intersectingVector, angleRebarPlanToView, centerOfBox) * visibleRebarTransform;
                     c = curve.CreateTransformed(rotated);
@@ -304,11 +319,32 @@ namespace SimpleBendingDetail
         private void SetBarLengths(Rebar rebar, Document doc, int barPosition)
         {
 
-            List<double> segmentLengths = new List<double>();
 
             ElementId shapeId = rebar.GetShapeId();
             RebarShape rebarShape = doc.GetElement(shapeId) as RebarShape;
             RebarShapeDefinition shapeDefinition = rebarShape.GetRebarShapeDefinition();
+
+            bool isVarying = (rebar.DistributionType == DistributionType.VaryingLength);
+            int startPos = 0;
+            int endPos = rebar.NumberOfBarPositions;
+
+
+            if(rebar.LayoutRule != RebarLayoutRule.Single)
+            {
+                if (!rebar.IncludeFirstBar)
+                {
+                    startPos++;
+                }
+
+                if (!rebar.IncludeLastBar)
+                {
+                    endPos--;
+                }
+            }
+
+
+
+
 
             //add hook lengths
 
@@ -341,15 +377,58 @@ namespace SimpleBendingDetail
                     if (constraint.GetType() == typeof(RebarShapeConstraintArcLength))
                     {
                         ElementId paramId = constraint.GetParamId();
-                        ParameterValue parameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
-                        
+
+                        ParameterValue minParameterValue = null;
+                        ParameterValue maxParameterValue = null;
+
+
+                        if (isVarying)
+                        {
+
+                            double min = double.MaxValue;
+                            double max = double.MinValue;
+
+                            for (int i = startPos; i < endPos; i++)
+                            {
+                                DoubleParameterValue value = rebar.GetParameterValueAtIndex(paramId, i) as DoubleParameterValue;
+                                if (min > value.Value)
+                                {
+                                    min = value.Value;
+                                    minParameterValue = rebar.GetParameterValueAtIndex(paramId, i);
+                                }
+
+                                if(max < value.Value)
+                                {
+                                    max = value.Value;
+                                    maxParameterValue = rebar.GetParameterValueAtIndex(paramId,i);
+                                }
+                            }
+
+                            if(MathComparisonUtils.IsAlmostEqual(min, max))
+                            {
+                                maxParameterValue = null;
+                            }
+
+                        } //if isVarying
+                        else
+                        {
+                            minParameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
+                        }
                         if (definitionByArc.Type == RebarShapeDefinitionByArcType.LappedCircle)  //todo implement lap splice label
                         {
                             this.segments[familySegment].MinLabel = 0;
+                            if(maxParameterValue != null)
+                            {
+                                this.segments[familySegment].MaxLabel = 0;
+                            }
                         }
                         else
                         {
-                            this.segments[familySegment].MinLabel = (parameterValue as DoubleParameterValue).Value;
+                            this.segments[familySegment].MinLabel = (minParameterValue as DoubleParameterValue).Value;
+                            if(maxParameterValue  != null)
+                            {
+                                this.segments[familySegment].MaxLabel = (maxParameterValue as DoubleParameterValue).Value;
+                            }
                         }
 
                     }
@@ -360,51 +439,192 @@ namespace SimpleBendingDetail
                 //code for RebarShapeDefinitionBySegments
                 RebarShapeDefinitionBySegments definitionBySegments = shapeDefinition as RebarShapeDefinitionBySegments;
 
+
                 for (int i = 0; i < definitionBySegments.NumberOfSegments; i++)
                 {
                     RebarShapeSegment seg = definitionBySegments.GetSegment(i);
                     IList<RebarShapeConstraint> constraints = seg.GetConstraints();
-                    
+
+                    ParameterValue minParameterValue = null;
+                    ParameterValue maxParameterValue = null;
+
                     //get type and values of current segment constraints
-                    double constr180DegreeBendArcLength = 0;
-                    double constrSegmentLength = 0;
-                    double constr180DegreeBendRadius = 0;
+                    double minConstr180DegreeBendArcLength = 0;
+                    double maxConstr180DegreeBendArcLength = 0;
+
+                    double minConstrSegmentLength = 0;
+                    double maxConstrSegmentLength = 0;
+
+                    double minConstr180DegreeBendRadius = 0;
+                    double maxConstr180DegreeBendRadius = 0;
 
                     foreach (RebarShapeConstraint constraint in constraints)
                     {
+                        //********************
+                        //code for RebarShapeConstraintSegmentLength
+                        //********************
+
                         if (constraint.GetType() == typeof(RebarShapeConstraintSegmentLength))
                         {
                             ElementId paramId = constraint.GetParamId();
-                            ParameterValue parameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
-                            constrSegmentLength = (parameterValue as DoubleParameterValue).Value;
+
+                            if (isVarying)
+                            {
+                                double min = double.MaxValue;
+                                double max = double.MinValue;
+
+                                for (int ii = startPos; ii < endPos; ii++)
+                                {
+                                    DoubleParameterValue value = rebar.GetParameterValueAtIndex(paramId, ii) as DoubleParameterValue;
+                                    if (min > value.Value)
+                                    {
+                                        min = value.Value;
+                                        minParameterValue = rebar.GetParameterValueAtIndex(paramId, ii);
+                                    }
+
+                                    if (max < value.Value)
+                                    {
+                                        max = value.Value;
+                                        maxParameterValue = rebar.GetParameterValueAtIndex(paramId, ii);
+                                    }
+                                }
+                                if (MathComparisonUtils.IsAlmostEqual(min, max))
+                                {
+                                    maxParameterValue = null;
+                                }
+
+                            }
+                            else
+                            {
+                                minParameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
+                            }
+
+                            minConstrSegmentLength = (minParameterValue as DoubleParameterValue).Value;
+                            if(maxParameterValue != null)
+                            {
+                                maxConstrSegmentLength = (maxParameterValue as DoubleParameterValue).Value;
+                            }
+
                         }
-                        if (constraint.GetType() == typeof(RebarShapeConstraint180DegreeBendRadius)) //ne raboti
+
+                        //********************
+                        //code for RebarShapeConstraint180DegreeBendRadius
+                        //********************
+
+                        if (constraint.GetType() == typeof(RebarShapeConstraint180DegreeBendRadius))
                         {
                             ElementId paramId = constraint.GetParamId();
-                            ParameterValue parameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
-                            constr180DegreeBendRadius = (parameterValue as DoubleParameterValue).Value;
+
+                            if (isVarying)
+                            {
+                                double min = double.MaxValue;
+                                double max = double.MinValue;
+
+                                for (int ii = startPos; ii < endPos; ii++)
+                                {
+                                    DoubleParameterValue value = rebar.GetParameterValueAtIndex(paramId, ii) as DoubleParameterValue;
+                                    if (min > value.Value)
+                                    {
+                                        min = value.Value;
+                                        minParameterValue = rebar.GetParameterValueAtIndex(paramId, ii);
+                                    }
+
+                                    if (max < value.Value)
+                                    {
+                                        max = value.Value;
+                                        maxParameterValue = rebar.GetParameterValueAtIndex(paramId, ii);
+                                    }
+                                }
+                                if (MathComparisonUtils.IsAlmostEqual(min, max))
+                                {
+                                    maxParameterValue = null;
+                                }
+
+                            }
+                            else
+                            {
+                                minParameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
+                            }
+
+                            minConstr180DegreeBendRadius = (minParameterValue as DoubleParameterValue).Value;
+                            if (maxParameterValue != null)
+                            {
+                                maxConstr180DegreeBendRadius = (maxParameterValue as DoubleParameterValue).Value;
+                            }
+
                         }
-                        if (constraint.GetType() == typeof(RebarShapeConstraint180DegreeBendArcLength)) //ne raboti
+
+                        //********************
+                        //code for RebarShapeConstraint180DegreeBendArcLength
+                        //********************
+
+                        if (constraint.GetType() == typeof(RebarShapeConstraint180DegreeBendArcLength))
                         {
                             ElementId paramId = constraint.GetParamId();
-                            ParameterValue parameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
-                            constr180DegreeBendArcLength = (parameterValue as DoubleParameterValue).Value;
+
+                            if (isVarying)
+                            {
+                                double min = double.MaxValue;
+                                double max = double.MinValue;
+
+                                int barNum = rebar.NumberOfBarPositions;
+                                for (int ii = startPos; ii < endPos; ii++)
+                                {
+                                    DoubleParameterValue value = rebar.GetParameterValueAtIndex(paramId, ii) as DoubleParameterValue;
+                                    if (min > value.Value)
+                                    {
+                                        min = value.Value;
+                                        minParameterValue = rebar.GetParameterValueAtIndex(paramId, ii);
+                                    }
+
+                                    if (max < value.Value)
+                                    {
+                                        max = value.Value;
+                                        maxParameterValue = rebar.GetParameterValueAtIndex(paramId, ii);
+                                    }
+                                }
+                                if (MathComparisonUtils.IsAlmostEqual(min, max))
+                                {
+                                    maxParameterValue = null;
+                                }
+
+                            }
+                            else
+                            {
+                                minParameterValue = rebar.GetParameterValueAtIndex(paramId, barPosition);
+                            }
+
+                            minConstr180DegreeBendArcLength = (minParameterValue as DoubleParameterValue).Value;
+                            if (maxParameterValue != null)
+                            {
+                                maxConstr180DegreeBendArcLength = (maxParameterValue as DoubleParameterValue).Value;
+                            }
+
                         }
+
                     }
 
-                    if ( constr180DegreeBendArcLength > 0)
+                    if ( minConstr180DegreeBendArcLength > 0)
                     {
                         familySegment--;
-                        this.segments[familySegment].MinLabel = constr180DegreeBendArcLength;
+                        this.segments[familySegment].MinLabel = minConstr180DegreeBendArcLength;
+                        if (maxConstr180DegreeBendArcLength > 0)
+                        {
+                            this.segments[familySegment].MaxLabel = maxConstr180DegreeBendArcLength;
+                        }
                         familySegment++; //next segment
                     }
-                    else if (constr180DegreeBendRadius > 0 && constrSegmentLength > 0)
+                    else if (minConstr180DegreeBendRadius > 0 && minConstrSegmentLength > 0)
                     {
                         this.segments[familySegment].MinLabel = 0;
                     }
-                    else if (constrSegmentLength > 0) 
+                    else if (minConstrSegmentLength > 0) 
                     {
-                        this.segments[familySegment].MinLabel = constrSegmentLength;
+                        this.segments[familySegment].MinLabel = minConstrSegmentLength;
+                        if(maxConstrSegmentLength > 0)
+                        {
+                            this.segments[familySegment].MaxLabel = maxConstrSegmentLength;
+                        }
                         familySegment++; //next segment
                         familySegment++; //jump over vertex
                     }
