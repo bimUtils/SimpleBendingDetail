@@ -36,6 +36,25 @@ namespace SimpleBendingDetail
 
             Selection selection = uidoc.Selection;
             ICollection<ElementId> selectedIds = uidoc.Selection.GetElementIds();
+
+
+            //filter selection to rebars only
+            ICollection<ElementId> selectedRebarIds = new List<ElementId>();
+            foreach (ElementId id in selectedIds)
+            {
+                Element ele = uidoc.Document.GetElement(id);
+                if (ele is Rebar)
+                {
+                    selectedRebarIds.Add(id);
+                }
+            }
+
+            // Set the created element set as current select element set.
+            uidoc.Selection.SetElementIds(selectedRebarIds);
+
+
+
+
             //IList<Element> parameterElements = new List<Element>();
 
             //foreach (var item in shapeParametersIds)
@@ -46,10 +65,55 @@ namespace SimpleBendingDetail
 
             IList<Rebar> rebars = new List<Rebar>();
 
-            foreach (ElementId id in selectedIds)
+
+            //****************
+            //Get only planar rebars with shape
+            //****************
+            int unsupportedRebars = 0;
+            foreach (ElementId id in selectedRebarIds)
             {
                 Rebar singleRebar = doc.GetElement(id) as Rebar;
+
+
+                //check for freeform rebar without shape
+
+                if (singleRebar.IsRebarFreeForm())
+                {
+
+                    unsupportedRebars++;
+                    continue;
+
+                    //todo - pass freeform rebars with shape
+                    //if (singleRebar.GetFreeFormAccessor().WorkshopInstructions == RebarWorkInstructions.Straight)
+                    //{
+                    //    unsupportedRebars++;
+                    //    continue;
+                    //}
+
+                }
+
+                //check for multiplanar rebars
+
+                IList<Curve> curves = singleRebar.GetCenterlineCurves(false, false, false, MultiplanarOption.IncludeAllMultiplanarCurves, 0).ToList();
+                CurveLoop curveLoop = new CurveLoop();
+                foreach (Curve curve in curves)
+                {
+                    curveLoop.Append(curve);
+                }
+                if (!curveLoop.HasPlane() && curves.Count > 1)
+                {
+                    unsupportedRebars++;
+                    continue;
+                }
+
+
+
                 rebars.Add(singleRebar);
+            }
+
+            if (unsupportedRebars > 0)
+            {
+                TaskDialog.Show("Information", $"{unsupportedRebars.ToString()} unsuppported 3D or free form rebar(s) found.");
             }
 
 
@@ -61,13 +125,14 @@ namespace SimpleBendingDetail
                 {
                     trans.Start();
 
+                    ICollection<ElementId> placedDetIds = new List<ElementId>();
 
                     //get family parameters for each selected rebar    
                     foreach (var rebar in rebars)
                     {
 
 
-                         BendindDetail bendingDetail = new BendindDetail(doc, view, rebar);
+                        BendindDetail bendingDetail = new BendindDetail(doc, view, rebar);
 
 
                         //Create Filtered Element Collector
@@ -79,18 +144,22 @@ namespace SimpleBendingDetail
                             .Cast<FamilySymbol>()
                             .First(x => x.Name == "Simple_Bending_Detail"); // Simple_Bending_Detail  Floating_Column_Detail
 
-                        bendingDetail.PlaceOnView(doc, view, familySymbol);
-
-
+                        ElementId detId = bendingDetail.PlaceOnView(doc, view, familySymbol);
+                        placedDetIds.Add(detId);
 
                     }//for each rebar in rebars
 
 
-                    
-
 
 
                     trans.Commit();
+
+                    if (placedDetIds.Count > 0)
+                    {
+                        uidoc.Selection.SetElementIds(placedDetIds);
+
+                    }
+
 
 
                 }
@@ -111,6 +180,13 @@ namespace SimpleBendingDetail
                 return Result.Failed;
             }
         }
+
+
+
+
+
+
+
 
 
 

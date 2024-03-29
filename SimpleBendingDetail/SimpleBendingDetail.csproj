@@ -33,7 +33,7 @@
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
-    <ApplicationManifest>SimpleBendingDeatail.addin</ApplicationManifest>
+    <ApplicationManifest>SimpleBendingDetail.addin</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="RevitAPI">
@@ -61,7 +61,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="SimpleBendingDeatail.addin" />
+    <None Include="SimpleBendingDetail.addin" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
