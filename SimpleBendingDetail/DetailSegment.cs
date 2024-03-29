@@ -11,6 +11,7 @@
         public double MaxLabel { get; set; }
         public bool IsStartSegment { get; set; }
         public bool IsEndSegment { get; set; }
+        public bool Visibility { get; set; }
 
         // the family no longer needs this parameter. If Length == 0, then Visibility if false
         //public bool Visibility { get; set; } 
@@ -19,14 +20,14 @@
         {
             XOffset = 0;
             YOffset = 0;
-            Length = 10;
+            Length = 0;
             ArcRadius = 0;
             Rotation = 0;
             MinLabel = 0;
             MaxLabel = 0;
             IsStartSegment = false;
             IsEndSegment = false;
-//            Visibility = false;
+            Visibility = false;
         }
 
 
