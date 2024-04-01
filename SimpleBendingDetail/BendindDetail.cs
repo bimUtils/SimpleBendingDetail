@@ -32,14 +32,14 @@ namespace SimpleBendingDetail
             //Get bar diameter
             //******************
 
-            RebarBarType barType = doc.GetElement(rebar.GetTypeId()) as RebarBarType;
-            this.barDiameter = barType.BarDiameter;
+            double rebarDiameter = rebar.get_Parameter(BuiltInParameter.REBAR_BAR_DIAMETER).AsDouble();
+            this.barDiameter = rebarDiameter;
 
 
             //******************
             //Get projected centerline curves
             //******************
-            
+
             int visibleBarPosition = int.MaxValue;
             IList<Curve> planCurves;
 
@@ -268,14 +268,11 @@ namespace SimpleBendingDetail
             XYZ viewNormal = view.ViewDirection;
             XYZ viewX = view.RightDirection;
             XYZ viewY = view.UpDirection;
+            XYZ intersectingVector = new XYZ();
 
-            //vector parallel to intersection of rebar plane and view plane
-            XYZ intersectingVector = viewNormal.CrossProduct(rebarNormal);
 
             //angles between rebar and view, and view X direction
             double angleRebarPlanToView = viewNormal.AngleTo(rebarNormal);
-            //original double angleRebarToXDirection = intersectingVector.AngleTo(viewX);
-            double angleRebarToXDirection = intersectingVector.AngleOnPlaneTo(viewX, viewNormal);
 
             //angle up to pi/2
             if (angleRebarPlanToView > Math.PI / 2 )
@@ -283,11 +280,24 @@ namespace SimpleBendingDetail
                 angleRebarPlanToView = Math.PI - angleRebarPlanToView;
             }
 
-            //read from bottom and right
-            if (MathComparisonUtils.IsGreaterThan ( angleRebarPlanToView, 0) && MathComparisonUtils.IsGreaterThanOrAlmostEqual( angleRebarToXDirection, 0) && MathComparisonUtils.IsLessThan (angleRebarToXDirection, Math.PI / 2 )  || MathComparisonUtils.IsGreaterThanOrAlmostEqual ( angleRebarToXDirection , Math.PI / 2 * 3 ))
+
+            if(!MathComparisonUtils.IsAlmostEqual (angleRebarPlanToView, 0))
             {
-                angleRebarPlanToView += Math.PI;
+                //vector parallel to intersection of rebar plane and view plane
+                intersectingVector = viewNormal.CrossProduct(rebarNormal);
+
+                //original double angleRebarToXDirection = intersectingVector.AngleTo(viewX);
+                double angleRebarToXDirection = intersectingVector.AngleOnPlaneTo(viewX, viewNormal);
+
+                //read from bottom and right
+                if (MathComparisonUtils.IsGreaterThanOrAlmostEqual(angleRebarToXDirection, 0) && MathComparisonUtils.IsLessThan(angleRebarToXDirection, Math.PI / 2) || MathComparisonUtils.IsGreaterThanOrAlmostEqual(angleRebarToXDirection, Math.PI / 2 * 3))
+                {
+                    angleRebarPlanToView += Math.PI;
+                }
+
             }
+
+
 
             //project center to view plane
             this.ProjectedCenter = ProjectPointToPlane(plane, centerOfBox);
@@ -298,7 +308,7 @@ namespace SimpleBendingDetail
                 Curve c = null;
 
 
-                if (MathComparisonUtils.IsGreaterThan (angleRebarPlanToView, 0) )
+                if (!MathComparisonUtils.IsAlmostEqual (angleRebarPlanToView, 0) )
                 {
                     Transform rotated = Transform.CreateRotationAtPoint(intersectingVector, angleRebarPlanToView, centerOfBox) * visibleRebarTransform;
                     c = curve.CreateTransformed(rotated);

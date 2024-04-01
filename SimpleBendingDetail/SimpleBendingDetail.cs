@@ -9,7 +9,7 @@ using Autodesk.Revit.UI.Selection;
 
 namespace SimpleBendingDetail
 {
-    [TransactionAttribute(TransactionMode.ReadOnly)]
+    [TransactionAttribute(TransactionMode.Manual)]
     public class SimpleBendingDetail : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -23,16 +23,6 @@ namespace SimpleBendingDetail
             //Get Current View
             View view = doc.ActiveView;
 
-            //Create Plane of View
-            //to do Remove after functions are ready
-            //Plane plane = Plane.CreateByOriginAndBasis(view.Origin, view.RightDirection, view.UpDirection);
-
-            //Get Shared parameters ID for rebars in document
-            //IList<ElementId> shapeParametersIds = RebarShapeParameters.GetAllRebarShapeParameters(doc);
-
-
-            //Select rebars
-            //todo: filter only rebars; filter only shape driven rebars
 
             Selection selection = uidoc.Selection;
             ICollection<ElementId> selectedIds = uidoc.Selection.GetElementIds();
