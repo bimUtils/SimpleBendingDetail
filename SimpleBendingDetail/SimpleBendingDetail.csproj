@@ -32,10 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup />
-  <PropertyGroup>
-    <ApplicationManifest>SimpleBendingDetail.addin</ApplicationManifest>
-  </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
+    <Reference Include="PresentationCore" />
     <Reference Include="RevitAPI">
       <HintPath>C:\Program Files\Autodesk\Revit 2021\RevitAPI.dll</HintPath>
       <Private>False</Private>
@@ -54,14 +53,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DetailSegment.cs" />
-    <Compile Include="BendindDetail.cs" />
-    <Compile Include="SimpleBendingDetail.cs" />
-    <Compile Include="CurveBoundingBoxXYZ.cs" />
+    <Compile Include="SimpleBendingDetail\DetailSegment.cs" />
+    <Compile Include="SimpleBendingDetail\BendindDetail.cs" />
+    <Compile Include="ExternalApplication.cs" />
+    <Compile Include="SimpleBendingDetail\SimpleBendingDetail.cs" />
+    <Compile Include="SimpleBendingDetail\CurveBoundingBoxXYZ.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SimpleBendingDetail.addin" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="SimpleBending32.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
