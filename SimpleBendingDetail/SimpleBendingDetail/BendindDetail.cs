@@ -191,12 +191,32 @@ namespace SimpleBendingDetail
             familyInstance.GetParameters("Bar_Diameter").First().Set(this.barDiameter);
 
 
+            //set all segments to be unvisible - "create similar" protection
+
+            familyInstance.GetParameters("h1_Visibility").First().Set(0);
+            familyInstance.GetParameters("h1_Length").First().Set(0);
+
+            familyInstance.GetParameters("h2_Visibility").First().Set(0);
+            familyInstance.GetParameters("h2_Length").First().Set(0);
+
+            for (int paramNum = 2; paramNum <= MaxSegments; paramNum++)
+            {
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_Length").First().Set(0);
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_X_Offset").First().Set(0);
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_Y_Offset").First().Set(0);
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_Arc_Radius").First().Set(0);
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_Rotation").First().Set(0);
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_Min_Label").First().Set(0);
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_Max_Label").First().Set(0);
+                familyInstance.GetParameters("s" + paramNum.ToString() + "_Visibility").First().Set(0);
+            }
+
             //edit segments length
             int seg = 0;
             foreach (DetailSegment segment in this.segments)
             {
                 seg++;
-                if (seg > MaxSegments && segment.Length == 0)
+                if (seg > MaxSegments) // && segment.Length == 0
                 {
                     break;
                 }

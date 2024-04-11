@@ -6,6 +6,10 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI.Selection;
+using System.Reflection;
+using System.IO;
+using System.Windows.Media.Imaging;
+using System.Collections.ObjectModel;
 
 namespace SimpleBendingDetail
 {
@@ -107,6 +111,7 @@ namespace SimpleBendingDetail
             }
 
 
+
             try
             {
 
@@ -117,22 +122,39 @@ namespace SimpleBendingDetail
 
                     ICollection<ElementId> placedDetIds = new List<ElementId>();
 
+                    //Create Filtered Element Collector
+                    FilteredElementCollector collector = new FilteredElementCollector(doc);
+                    collector.OfCategory(BuiltInCategory.OST_DetailComponents);
+                    collector.OfClass(typeof(FamilySymbol));
+
+                    //check if family exist in the project, if not - loads family
+                    var exists = from FamilySymbol fs in collector
+                                 where fs.Name.Equals("Simple_Bending_Detail") && fs.FamilyName.Equals("Simple_Bending_Detail")
+                                 select fs;
+
+                    if (exists.Count() == 0)
+                    {
+                        //load family
+                        string pathFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                        //string famPath = "D:\\bimUtils" + "\\Simple_Bending_Detail.rfa";
+                        string famPath = pathFolder + "\\Resources\\Simple_Bending_Detail.rfa";
+                        if (!doc.LoadFamilySymbol(@famPath, "Simple_Bending_Detail"))
+                        {
+                            TaskDialog.Show("bimUtils", "Family not found!");
+                        }
+                    }
+
+                    FamilySymbol familySymbol = collector.WhereElementIsElementType()
+                            .Cast<FamilySymbol>()
+                            .First(x => x.Name == "Simple_Bending_Detail"); // Simple_Bending_Detail  Floating_Column_Detail
+
+
                     //get family parameters for each selected rebar    
                     foreach (var rebar in rebars)
                     {
 
 
                         BendindDetail bendingDetail = new BendindDetail(doc, view, rebar);
-
-
-                        //Create Filtered Element Collector
-                        FilteredElementCollector collector = new FilteredElementCollector(doc);
-                        collector.OfCategory(BuiltInCategory.OST_DetailComponents);
-                        collector.OfClass(typeof(FamilySymbol));
-
-                        FamilySymbol familySymbol = collector.WhereElementIsElementType()
-                            .Cast<FamilySymbol>()
-                            .First(x => x.Name == "Simple_Bending_Detail"); // Simple_Bending_Detail  Floating_Column_Detail
 
                         ElementId detId = bendingDetail.PlaceOnView(doc, view, familySymbol);
                         placedDetIds.Add(detId);

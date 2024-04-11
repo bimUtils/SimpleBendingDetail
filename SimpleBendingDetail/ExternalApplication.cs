@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Windows.Media.Imaging;
+using System.IO;
 
 namespace SimpleBendingDetail
 {
@@ -29,7 +30,10 @@ namespace SimpleBendingDetail
 
 
             //Add image
-            Uri imagePath = new Uri(@"D:\\bimUtils\\SimpleBendingDetail\icon.png");
+            //Uri imagePath = new Uri(@"D:\\bimUtils\\SimpleBendingDetail\icon.png");
+            string iconPath = Path.GetDirectoryName(path) + "\\Resources\\SimpleBendingDetail.png";
+
+            Uri imagePath = new Uri(@iconPath);
             BitmapImage image = new BitmapImage(imagePath);
 
             PushButton pushButton = panel.AddItem(button) as PushButton;

@@ -61,10 +61,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="SimpleBendingDetail.addin" />
+    <None Include="Contents\SimpleBendingDetail.addin" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="SimpleBending32.ico" />
+    <Content Include="PackageContents.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
