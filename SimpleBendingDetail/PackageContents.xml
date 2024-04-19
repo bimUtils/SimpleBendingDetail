@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ApplicationPackage>
+  <Components Description="Simple Bending Detail">
+    <CompanyDetails Name="BIM Utils Ltd." 
+                    Email="support@bimuntils.com" 
+                    Url="bimutils.com" Phone=" " />
+    <RuntimeRequirements OS="Win64"
+    Platform="Revit|Revit Architecture|Revit Structure|Revit MEP"
+    SeriesMin="R2021"
+    SeriesMax="R2024" />
+    <ComponentEntry AppName="SimpleBendingDetail"
+    Version="1.0.0"
+    ModuleName="./Contents/SimpleBendingDetail.addin"
+    AppDescription="Bending detail for rebars" />
+  </Components>
+</ApplicationPackage>
