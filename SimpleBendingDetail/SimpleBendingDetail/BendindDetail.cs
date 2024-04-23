@@ -9,6 +9,7 @@ using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI.Selection;
 using System.Security.Cryptography;
+using Autodesk.Revit.DB.Visual;
 
 
 namespace SimpleBendingDetail
@@ -175,95 +176,191 @@ namespace SimpleBendingDetail
         {
             //place family
 
-            const int MaxSegments = 18;
+            //const int MaxSegments = 18;
 
             if (!familySymbol.IsActive)
             {
                 familySymbol.Activate();
+                doc.Regenerate();
             }
 
             FamilyInstance familyInstance = doc.Create.NewFamilyInstance(this.ProjectedCenter, familySymbol, view);
 
             ElementId famId = familyInstance.Id;
 
+
+
+
             //edit bar diameter
 
-            familyInstance.GetParameters("Bar_Diameter").First().Set(this.barDiameter);
+            //familyInstance.GetParameters("Bar_Diameter").First().Set(this.barDiameter);
+
+            //edit segments length
+            //int seg = 0;
+            //foreach (DetailSegment segment in this.segments)
+            //{
+            //    seg++;
+            //    if (seg > MaxSegments && segment.Length == 0) 
+            //    {
+            //        break;
+            //    }
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_Length").First().Set(segment.Length);
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_X_Offset").First().Set(segment.XOffset);
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_Y_Offset").First().Set(segment.YOffset);
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_Arc_Radius").First().Set(segment.ArcRadius);
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_Rotation").First().Set(segment.Rotation);
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_Min_Label").First().Set(segment.MinLabel);
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_Max_Label").First().Set(segment.MaxLabel);
+            //    familyInstance.GetParameters("s" + seg.ToString() + "_Visibility").First().Set(1);
+            //    if(segment == this.segments.Last())
+            //    {
+            //        if(this.hook1Segment == null)
+            //        {
+            //            familyInstance.GetParameters("s" + seg.ToString() + "_End_Segment").First().Set(1);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        familyInstance.GetParameters("s" + seg.ToString() + "_End_Segment").First().Set(0);
+            //    }
+            //}
 
 
-            //set all segments to be unvisible - "create similar" protection
 
-            familyInstance.GetParameters("h1_Visibility").First().Set(0);
-            familyInstance.GetParameters("h1_Length").First().Set(0);
 
-            familyInstance.GetParameters("h2_Visibility").First().Set(0);
-            familyInstance.GetParameters("h2_Length").First().Set(0);
+            //add hook lengths
+            //if (this.hook0Segment != null) //there is start hook
+            //{
+            //    familyInstance.GetParameters("h1_Length").First().Set(this.hook0Segment.Length);
+            //    familyInstance.GetParameters("h1_X_Offset").First().Set(this.hook0Segment.XOffset);
+            //    familyInstance.GetParameters("h1_Y_Offset").First().Set(this.hook0Segment.YOffset);
+            //    familyInstance.GetParameters("h1_Rotation").First().Set(this.hook0Segment.Rotation);
+            //    familyInstance.GetParameters("h1_Label").First().Set(this.hook0Segment.MinLabel);
+            //    familyInstance.GetParameters("h1_Visibility").First().Set(1);
+            //    familyInstance.GetParameters("s1_Start_Segment").First().Set(0);
+            //}
+            //else
+            //{
+            //    familyInstance.GetParameters("s1_Start_Segment").First().Set(1);
 
-            for (int paramNum = 2; paramNum <= MaxSegments; paramNum++)
-            {
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_Length").First().Set(0);
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_X_Offset").First().Set(0);
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_Y_Offset").First().Set(0);
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_Arc_Radius").First().Set(0);
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_Rotation").First().Set(0);
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_Min_Label").First().Set(0);
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_Max_Label").First().Set(0);
-                familyInstance.GetParameters("s" + paramNum.ToString() + "_Visibility").First().Set(0);
-            }
+            //}
+            //if (this.hook1Segment != null) //there is end hook
+            //{
+            //    familyInstance.GetParameters("h2_Length").First().Set(this.hook1Segment.Length);
+            //    familyInstance.GetParameters("h2_X_Offset").First().Set(this.hook1Segment.XOffset);
+            //    familyInstance.GetParameters("h2_Y_Offset").First().Set(this.hook1Segment.YOffset);
+            //    familyInstance.GetParameters("h2_Rotation").First().Set(this.hook1Segment.Rotation);
+            //    familyInstance.GetParameters("h2_Label").First().Set(this.hook1Segment.MinLabel);
+            //    familyInstance.GetParameters("h2_Visibility").First().Set(1);
+            //}
+            //else
+            //{
+            //    familyInstance.GetParameters("s" + this.segments.Count.ToString() + "_End_Segment").First().Set(1);
+
+            //}
+
+            return famId;
+
+        }
+
+        public void UpdateDetail(Document doc, View view, ElementId id)
+        {
+
+            const int MaxSegments = 18;
+
+            Element detail = doc.GetElement(id);
+
+            //edit bar diameter
+
+            detail.GetParameters("Bar_Diameter").First().Set(this.barDiameter);
 
             //edit segments length
             int seg = 0;
             foreach (DetailSegment segment in this.segments)
             {
                 seg++;
-                if (seg > MaxSegments) // && segment.Length == 0
+                if (seg > MaxSegments && segment.Length == 0)
                 {
                     break;
                 }
-                familyInstance.GetParameters("s" + seg.ToString() + "_Length").First().Set(segment.Length);
-                familyInstance.GetParameters("s" + seg.ToString() + "_X_Offset").First().Set(segment.XOffset);
-                familyInstance.GetParameters("s" + seg.ToString() + "_Y_Offset").First().Set(segment.YOffset);
-                familyInstance.GetParameters("s" + seg.ToString() + "_Arc_Radius").First().Set(segment.ArcRadius);
-                familyInstance.GetParameters("s" + seg.ToString() + "_Rotation").First().Set(segment.Rotation);
-                familyInstance.GetParameters("s" + seg.ToString() + "_Min_Label").First().Set(segment.MinLabel);
-                familyInstance.GetParameters("s" + seg.ToString() + "_Max_Label").First().Set(segment.MaxLabel);
-                familyInstance.GetParameters("s" + seg.ToString() + "_Visibility").First().Set(1);
-                if(segment == segments.Last())
+                detail.GetParameters("s" + seg.ToString() + "_Length").First().Set(segment.Length);
+                detail.GetParameters("s" + seg.ToString() + "_X_Offset").First().Set(segment.XOffset);
+                detail.GetParameters("s" + seg.ToString() + "_Y_Offset").First().Set(segment.YOffset);
+                detail.GetParameters("s" + seg.ToString() + "_Arc_Radius").First().Set(segment.ArcRadius);
+                detail.GetParameters("s" + seg.ToString() + "_Rotation").First().Set(segment.Rotation);
+                detail.GetParameters("s" + seg.ToString() + "_Min_Label").First().Set(segment.MinLabel);
+                detail.GetParameters("s" + seg.ToString() + "_Max_Label").First().Set(segment.MaxLabel);
+                detail.GetParameters("s" + seg.ToString() + "_Visibility").First().Set(1);
+                if (segment == this.segments.Last())
                 {
-                    if(hook1Segment == null)
+                    if (this.hook1Segment == null)
                     {
-                        familyInstance.GetParameters("s" + seg.ToString() + "_End_Segment").First().Set(1);
+                        detail.GetParameters("s" + seg.ToString() + "_End_Segment").First().Set(1);
                     }
                 }
-                else if (hook1Segment == null && segments[seg - 1].Length == 0)
+                else
                 {
-                    familyInstance.GetParameters("s" + seg.ToString() + "_End_Segment").First().Set(1);
+                    detail.GetParameters("s" + seg.ToString() + "_End_Segment").First().Set(0);
                 }
             }
+            for (int num = seg + 1; num < MaxSegments; num++)
+            {
+                detail.GetParameters("s" + num.ToString() + "_Length").First().Set(0);
+                detail.GetParameters("s" + num.ToString() + "_X_Offset").First().Set(0);
+                detail.GetParameters("s" + num.ToString() + "_Y_Offset").First().Set(0);
+                detail.GetParameters("s" + num.ToString() + "_Arc_Radius").First().Set(0);
+                detail.GetParameters("s" + num.ToString() + "_Rotation").First().Set(0);
+                detail.GetParameters("s" + num.ToString() + "_Min_Label").First().Set(0);
+                detail.GetParameters("s" + num.ToString() + "_Max_Label").First().Set(0);
+                detail.GetParameters("s" + num.ToString() + "_Visibility").First().Set(0);
+            }
+
+
+
 
             //add hook lengths
             if (this.hook0Segment != null) //there is start hook
             {
-                familyInstance.GetParameters("h1_Length").First().Set(this.hook0Segment.Length);
-                familyInstance.GetParameters("h1_X_Offset").First().Set(this.hook0Segment.XOffset);
-                familyInstance.GetParameters("h1_Y_Offset").First().Set(this.hook0Segment.YOffset);
-                familyInstance.GetParameters("h1_Rotation").First().Set(this.hook0Segment.Rotation);
-                familyInstance.GetParameters("h1_Label").First().Set(this.hook0Segment.MinLabel);
-                familyInstance.GetParameters("h1_Visibility").First().Set(1);
-                
-                familyInstance.GetParameters("s1_Start_Segment").First().Set(0);
+                detail.GetParameters("h1_Length").First().Set(this.hook0Segment.Length);
+                detail.GetParameters("h1_X_Offset").First().Set(this.hook0Segment.XOffset);
+                detail.GetParameters("h1_Y_Offset").First().Set(this.hook0Segment.YOffset);
+                detail.GetParameters("h1_Rotation").First().Set(this.hook0Segment.Rotation);
+                detail.GetParameters("h1_Label").First().Set(this.hook0Segment.MinLabel);
+                detail.GetParameters("h1_Visibility").First().Set(1);
+                detail.GetParameters("s1_Start_Segment").First().Set(0);
             }
-            if (this.hook1Segment != null) //there is start hook
+            else
             {
-                familyInstance.GetParameters("h2_Length").First().Set(this.hook1Segment.Length);
-                familyInstance.GetParameters("h2_X_Offset").First().Set(this.hook1Segment.XOffset);
-                familyInstance.GetParameters("h2_Y_Offset").First().Set(this.hook1Segment.YOffset);
-                familyInstance.GetParameters("h2_Rotation").First().Set(this.hook1Segment.Rotation);
-                familyInstance.GetParameters("h2_Label").First().Set(this.hook1Segment.MinLabel);
-                familyInstance.GetParameters("h2_Visibility").First().Set(1);
+                detail.GetParameters("h1_Length").First().Set(0);
+                detail.GetParameters("h1_X_Offset").First().Set(0);
+                detail.GetParameters("h1_Y_Offset").First().Set(0);
+                detail.GetParameters("h1_Rotation").First().Set(0);
+                detail.GetParameters("h1_Label").First().Set(0);
+                detail.GetParameters("h1_Visibility").First().Set(0);
+                detail.GetParameters("s1_Start_Segment").First().Set(1);
+
             }
 
-            return famId;
+            if (this.hook1Segment != null) //there is end hook
+            {
+                detail.GetParameters("h2_Length").First().Set(this.hook1Segment.Length);
+                detail.GetParameters("h2_X_Offset").First().Set(this.hook1Segment.XOffset);
+                detail.GetParameters("h2_Y_Offset").First().Set(this.hook1Segment.YOffset);
+                detail.GetParameters("h2_Rotation").First().Set(this.hook1Segment.Rotation);
+                detail.GetParameters("h2_Label").First().Set(this.hook1Segment.MinLabel);
+                detail.GetParameters("h2_Visibility").First().Set(1);
+            }
+            else
+            {
+                detail.GetParameters("h2_Length").First().Set(0);
+                detail.GetParameters("h2_X_Offset").First().Set(0);
+                detail.GetParameters("h2_Y_Offset").First().Set(0);
+                detail.GetParameters("h2_Rotation").First().Set(0);
+                detail.GetParameters("h2_Label").First().Set(0);
+                detail.GetParameters("h2_Visibility").First().Set(0);
+                detail.GetParameters("s" + this.segments.Count.ToString() + "_End_Segment").First().Set(1);
+            }
+
 
         }
 

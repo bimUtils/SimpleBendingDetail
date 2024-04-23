@@ -110,61 +110,86 @@ namespace SimpleBendingDetail
                 TaskDialog.Show("Information", $"{unsupportedRebars.ToString()} unsuppported 3D or free form rebar(s) found.");
             }
 
+            ICollection<ElementId> placedDetIds = new List<ElementId>();
+            IList<BendindDetail> bendingDetails= new List<BendindDetail>();
 
 
             try
             {
 
-
-                using (Transaction trans = new Transaction(doc, "Curves Placed"))
+                using (TransactionGroup transGroup = new TransactionGroup(doc, "Bend detail"))
                 {
-                    trans.Start();
-
-                    ICollection<ElementId> placedDetIds = new List<ElementId>();
-
-                    //Create Filtered Element Collector
-                    FilteredElementCollector collector = new FilteredElementCollector(doc);
-                    collector.OfCategory(BuiltInCategory.OST_DetailComponents);
-                    collector.OfClass(typeof(FamilySymbol));
-
-                    //check if family exist in the project, if not - loads family
-                    var exists = from FamilySymbol fs in collector
-                                 where fs.Name.Equals("Simple_Bending_Detail") && fs.FamilyName.Equals("Simple_Bending_Detail")
-                                 select fs;
-
-                    if (exists.Count() == 0)
+                    transGroup.Start();
+                    
+                    using (Transaction transOne = new Transaction(doc, "Curves Placed"))
                     {
-                        //load family
-                        string pathFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                        //string famPath = "D:\\bimUtils" + "\\Simple_Bending_Detail.rfa";
-                        string famPath = pathFolder + "\\Resources\\Simple_Bending_Detail.rfa";
-                        if (!doc.LoadFamilySymbol(@famPath, "Simple_Bending_Detail"))
+                        transOne.Start();
+
+
+                        //Create Filtered Element Collector
+                        FilteredElementCollector collector = new FilteredElementCollector(doc);
+                        collector.OfCategory(BuiltInCategory.OST_DetailComponents);
+                        collector.OfClass(typeof(FamilySymbol));
+
+                        //check if family exist in the project, if not - loads family
+                        var exists = from FamilySymbol fs in collector
+                                     where fs.Name.Equals("Simple_Bending_Detail") && fs.FamilyName.Equals("Simple_Bending_Detail")
+                                     select fs;
+
+                        if (exists.Count() == 0)
                         {
-                            TaskDialog.Show("bimUtils", "Family not found!");
+                            //load family
+                            string pathFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                            //string famPath = "D:\\bimUtils" + "\\Simple_Bending_Detail.rfa";
+                            string famPath = pathFolder + "\\Resources\\Simple_Bending_Detail.rfa";
+                            if (!doc.LoadFamilySymbol(@famPath, "Simple_Bending_Detail"))
+                            {
+                                TaskDialog.Show("bimUtils", "Family not found!");
+                            }
                         }
+
+                        FamilySymbol familySymbol = collector.WhereElementIsElementType()
+                                .Cast<FamilySymbol>()
+                                .First(x => x.Name == "Simple_Bending_Detail"); // Simple_Bending_Detail  Floating_Column_Detail
+
+
+                        //get family parameters for each selected rebar    
+                        foreach (var rebar in rebars)
+                        {
+
+
+                            BendindDetail bendingDetail = new BendindDetail(doc, view, rebar);
+                            bendingDetails.Add(bendingDetail);
+                            
+
+                            ElementId detId = bendingDetail.PlaceOnView(doc, view, familySymbol);
+                            placedDetIds.Add(detId);
+
+                        }//for each rebar in rebars
+
+                        transOne.Commit();
+
+                    }
+                   
+                    
+                    using (Transaction transTwo = new Transaction(doc, "Curves Placed"))
+                    {
+                        transTwo.Start();
+
+                        int numDetail = 0;
+
+                        foreach (var id in placedDetIds)
+                        {
+                            bendingDetails[numDetail].UpdateDetail(doc, view, id);
+                            numDetail++;
+                        }
+
+                        transTwo.Commit();
+
                     }
 
-                    FamilySymbol familySymbol = collector.WhereElementIsElementType()
-                            .Cast<FamilySymbol>()
-                            .First(x => x.Name == "Simple_Bending_Detail"); // Simple_Bending_Detail  Floating_Column_Detail
 
 
-                    //get family parameters for each selected rebar    
-                    foreach (var rebar in rebars)
-                    {
-
-
-                        BendindDetail bendingDetail = new BendindDetail(doc, view, rebar);
-
-                        ElementId detId = bendingDetail.PlaceOnView(doc, view, familySymbol);
-                        placedDetIds.Add(detId);
-
-                    }//for each rebar in rebars
-
-
-
-
-                    trans.Commit();
 
                     if (placedDetIds.Count > 0)
                     {
@@ -172,9 +197,12 @@ namespace SimpleBendingDetail
 
                     }
 
+                    transGroup.Assimilate();
 
 
                 }
+
+
 
 
 
